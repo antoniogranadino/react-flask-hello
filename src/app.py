@@ -6,12 +6,15 @@ from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
-from api.models import db
+from api.models import db, User
 from api.routes import api
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager
 from api.admin import setup_admin
 from api.commands import setup_commands
 
 # from models import Person
+
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
@@ -28,7 +31,17 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+app.config["JWT_SECRET_KEY"]= os.environ.get("KEY_JWT")
+           
 MIGRATE = Migrate(app, db, compare_type=True)
+jwt=JWTManager(app)
+
+#Configuración bcrypt
+bcrypt = Bcrypt(app)
+app.bcrypt = bcrypt
+#Fin configuración bcrypt
+
 db.init_app(app)
 
 # add the admin
@@ -67,6 +80,7 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0  # avoid cache memory
     return response
 
+   
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':

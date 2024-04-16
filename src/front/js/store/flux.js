@@ -1,52 +1,79 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
-			message: null,
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
-			]
+			user:null
 		},
 		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
+			signup: async (email, password) => {
+				// try{
+					const response = await fetch(process.env.BACKEND_URL + "api/signup", {
+						method: "POST",
+						body: JSON.stringify({"email":email, "password":password}),
+						headers: {
+							"Content-Type":"application/json"
+						}
+					})
+					if(response.ok){
+						console.log("estoy en el if")
+						return true
+					}
+					console.log('estoy fuera de el if')
+					return false
+				// }catch(error){
+					
+				// 	console.log("Error loading message from backend", error)
+				// 	return false
+				// }
 			},
-
-			getMessage: async () => {
+			login: async (email, password) => {
 				try{
-					// fetching data from the backend
-					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
-					const data = await resp.json()
-					setStore({ message: data.message })
-					// don't forget to return something, that is how the async resolves
-					return data;
+					const response = await fetch(process.env.BACKEND_URL + "api/login", {
+						method: "POST",
+						body: JSON.stringify({"email":email, "password":password}),
+						headers: {
+							"Content-Type":"application/json"
+						}
+					})
+					if (response.status === 200) {
+                        const data = await response.json(); 
+                        sessionStorage.setItem("token", data.token)
+						setStore({user: data.user})
+						return true
+                    }
+					sessionStorage.removeItem("token")
+					setStore({user: false})
+					return false
 				}catch(error){
-					console.log("Error loading message from backend", error)
+					console.log("Failed to login. Verify your credentials")
+					sessionStorage.removeItem("token")
+					setStore({user: false})
+					return false
 				}
 			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
 
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
-
-				//reset the global store
-				setStore({ demo: demo });
-			}
+			private: async () => {
+				try{
+					const response = await fetch(process.env.BACKEND_URL + "api/private", {
+						method: "GET",
+						headers: {
+							"Authorization":"Bearer " + sessionStorage.getItem("token")
+						}
+					})
+					if (response.status === 200) {
+                        const data = await response.json(); 
+						setStore({user: data.user})
+						return data.user
+                    }
+					sessionStorage.removeItem("token")
+					setStore({user: false})
+					return false
+				}catch(error){
+					console.log("Failed to login. Verify your credentials")
+					sessionStorage.removeItem("token")
+					setStore({user: false})
+					return false
+				}
+			},
 		}
 	};
 };
